@@ -1,138 +1,54 @@
-class ChatInterface {
-    constructor() {
-        this.chatMessages = document.getElementById('chatMessages');
-        this.chatForm = document.getElementById('chatForm');
-        this.messageInput = document.getElementById('messageInput');
-        this.sendButton = document.getElementById('sendButton');
-        this.conversationHistory = [];
+// Simple test to see if JavaScript is working
+console.log('Chat.js loaded!');
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded!');
+    
+    const messageInput = document.getElementById('messageInput');
+    const sendButton = document.getElementById('sendButton');
+    const chatForm = document.getElementById('chatForm');
+    const chatMessages = document.getElementById('chatMessages');
+    
+    console.log('Message input:', messageInput);
+    console.log('Send button:', sendButton);
+    
+    if (!messageInput || !sendButton) {
+        console.error('Could not find input or button elements');
+        return;
+    }
+    
+    // Enable/disable send button based on input
+    messageInput.addEventListener('input', function() {
+        const hasText = messageInput.value.trim().length > 0;
+        sendButton.disabled = !hasText;
+        console.log('Input changed, has text:', hasText);
+    });
+    
+    // Handle form submission
+    chatForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        console.log('Form submitted!');
         
-        this.initializeEventListeners();
-        this.autoResizeTextarea();
-    }
-
-    initializeEventListeners() {
-        this.chatForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.sendMessage();
-        });
-
-        this.messageInput.addEventListener('input', () => {
-            this.updateSendButton();
-            this.autoResizeTextarea();
-        });
-
-        this.messageInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                this.sendMessage();
-            }
-        });
-    }
-
-    autoResizeTextarea() {
-        this.messageInput.style.height = 'auto';
-        this.messageInput.style.height = Math.min(this.messageInput.scrollHeight, 120) + 'px';
-    }
-
-    updateSendButton() {
-        const hasText = this.messageInput.value.trim().length > 0;
-        this.sendButton.disabled = !hasText;
-    }
-
-    async sendMessage() {
-        const message = this.messageInput.value.trim();
+        const message = messageInput.value.trim();
         if (!message) return;
-
+        
+        console.log('Sending message:', message);
+        
         // Add user message to chat
-        this.addMessage(message, 'user');
-        this.messageInput.value = '';
-        this.updateSendButton();
-        this.autoResizeTextarea();
-
-        // Show typing indicator
-        this.showTypingIndicator();
-
-        try {
-            const response = await this.callChatGPT(message);
-            this.hideTypingIndicator();
-            this.addMessage(response, 'ai');
-        } catch (error) {
-            this.hideTypingIndicator();
-            this.addErrorMessage('Sorry, I encountered an error. Please try again.');
-            console.error('ChatGPT API Error:', error);
-        }
-    }
-
-    async callChatGPT(message) {
-        // Add message to conversation history
-        this.conversationHistory.push({ role: 'user', content: message });
-
-        const response = await fetch('/api/chat', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                messages: this.conversationHistory,
-                model: 'gpt-3.5-turbo',
-                max_tokens: 1000,
-                temperature: 0.7
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        const aiResponse = data.choices[0].message.content;
-        
-        // Add AI response to conversation history
-        this.conversationHistory.push({ role: 'assistant', content: aiResponse });
-        
-        return aiResponse;
-    }
-
-    addMessage(content, sender) {
         const messageDiv = document.createElement('div');
-        messageDiv.className = `message ${sender}-message`;
-        
-        const messageContent = document.createElement('div');
-        messageContent.className = 'message-content';
-        
-        // Handle markdown-like formatting
-        const formattedContent = this.formatMessage(content);
-        messageContent.innerHTML = formattedContent;
-        
-        messageDiv.appendChild(messageContent);
-        this.chatMessages.appendChild(messageDiv);
-        
-        // Scroll to bottom
-        this.scrollToBottom();
-    }
-
-    formatMessage(content) {
-        // Convert markdown-like formatting to HTML
-        return content
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*(.*?)\*/g, '<em>$1</em>')
-            .replace(/`(.*?)`/g, '<code>$1</code>')
-            .replace(/\n/g, '<br>');
-    }
-
-    addErrorMessage(message) {
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'message ai-message';
-        errorDiv.innerHTML = `
-            <div class="message-content error-message">
+        messageDiv.className = 'message user-message';
+        messageDiv.innerHTML = `
+            <div class="message-content">
                 <p>${message}</p>
             </div>
         `;
-        this.chatMessages.appendChild(errorDiv);
-        this.scrollToBottom();
-    }
-
-    showTypingIndicator() {
+        chatMessages.appendChild(messageDiv);
+        
+        // Clear input
+        messageInput.value = '';
+        sendButton.disabled = true;
+        
+        // Show typing indicator
         const typingDiv = document.createElement('div');
         typingDiv.className = 'message ai-message';
         typingDiv.id = 'typingIndicator';
@@ -143,34 +59,61 @@ class ChatInterface {
                 <div class="typing-dot"></div>
             </div>
         `;
-        this.chatMessages.appendChild(typingDiv);
-        this.scrollToBottom();
-    }
-
-    hideTypingIndicator() {
-        const typingIndicator = document.getElementById('typingIndicator');
-        if (typingIndicator) {
-            typingIndicator.remove();
-        }
-    }
-
-    scrollToBottom() {
-        this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
-    }
-
-    clearChat() {
-        this.chatMessages.innerHTML = `
-            <div class="message ai-message">
+        chatMessages.appendChild(typingDiv);
+        
+        // Call API
+        fetch('/api/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Session-ID': 'session-' + Date.now()
+            },
+            body: JSON.stringify({
+                messages: [{ role: 'user', content: message }],
+                model: 'gpt-3.5-turbo',
+                max_tokens: 1000,
+                temperature: 0.7
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Remove typing indicator
+            const typingIndicator = document.getElementById('typingIndicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+            
+            // Add AI response
+            const aiResponse = data.choices[0].message.content;
+            const aiDiv = document.createElement('div');
+            aiDiv.className = 'message ai-message';
+            aiDiv.innerHTML = `
                 <div class="message-content">
-                    <p>Hello! I'm an AI assistant. How can I help you today?</p>
+                    <p>${aiResponse}</p>
                 </div>
-            </div>
-        `;
-        this.conversationHistory = [];
-    }
-}
-
-// Initialize chat interface when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    new ChatInterface();
+            `;
+            chatMessages.appendChild(aiDiv);
+        })
+        .catch(error => {
+            console.error('API Error:', error);
+            
+            // Remove typing indicator
+            const typingIndicator = document.getElementById('typingIndicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+            
+            // Show error message
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'message ai-message';
+            errorDiv.innerHTML = `
+                <div class="message-content error-message">
+                    <p>Sorry, I encountered an error. Please try again.</p>
+                </div>
+            `;
+            chatMessages.appendChild(errorDiv);
+        });
+    });
+    
+    console.log('Event listeners attached!');
 }); 

@@ -12,7 +12,6 @@
         <nav>
             <ul>
                 <li><a href="#about">About</a></li>
-                <li><a href="#articles">Articles</a></li>
                 <li><a href="#research">Research</a></li>
                 <li><a href="#projects">Projects</a></li>
                 <li><a href="#media">Media</a></li>
@@ -27,76 +26,75 @@
             <h2>About Me</h2>
             <p>Welcome to my personal website. I write about AI, infrastructure, and startups.</p>
             <div class="social-links">
-                <a href="https://medium.com/@mikexiaoxushen" target="_blank">Medium</a> |
-                <a href="https://www.youtube.com/@mikexiaoxushen" target="_blank">YouTube</a> |
-                <a href="https://mikexiaoxushen.substack.com" target="_blank">Substack</a> |
+                <a href="https://substack.com/@mikeshen/posts" target="_blank">Substack</a> |
+                <a href="https://medium.com/@mikeshine" target="_blank">Medium</a> |
+                <a href="https://www.youtube.com/@XiaoxuShenxshen48" target="_blank">YouTube</a> |
+                <a href="https://www.linkedin.com/in/mike-shen-8a518840/" target="_blank">LinkedIn</a> |
+                <a href="https://x.com/MikeXShenAWS" target="_blank">X (Twitter)</a> |
                 <a href="resume.html">Resume</a>
             </div>
         </section>
 
-        <section id="articles">
-            <h2>Articles</h2>
-            <div class="content-grid">
-                <article>
-                    <h3>Medium Articles</h3>
-                    <ul>
-                        <li><a href="articles/ai-infrastructure.html">Building AI Infrastructure</a></li>
-                        <li><a href="articles/startup-lessons.html">Lessons from My Startup Journey</a></li>
-                    </ul>
-                </article>
-                <article>
-                    <h3>Substack Newsletter</h3>
-                    <p>Subscribe to my newsletter for regular updates on AI, technology, and entrepreneurship.</p>
-                    <a href="https://mikexiaoxushen.substack.com" target="_blank" class="button">Subscribe</a>
-                </article>
+        <section id="updates">
+            <h2>Latest Updates</h2>
+            <div class="updates-container">
+                <div class="update-feed" id="substack-feed">
+                    <h3>Latest from Substack</h3>
+                    <div class="loading">Loading latest posts...</div>
+                </div>
+                <div class="update-feed" id="medium-feed">
+                    <h3>Latest from Medium</h3>
+                    <div class="loading">Loading latest posts...</div>
+                </div>
             </div>
         </section>
 
         <section id="research">
             <h2>Research</h2>
-            <div class="content-grid">
-                <article>
-                    <h3>Current Projects</h3>
-                    <ul>
-                        <li><a href="research/ai-systems.html">AI Systems Research</a></li>
-                        <li><a href="research/infrastructure.html">Infrastructure Optimization</a></li>
-                    </ul>
-                </article>
+            <div class="research-grid">
+                <div class="research-card">
+                    <h3><a href="research/ai-systems.html">AI Systems</a></h3>
+                    <p>Research on large-scale AI systems and their applications.</p>
+                </div>
+                <div class="research-card">
+                    <h3><a href="research/infrastructure.html">Infrastructure</a></h3>
+                    <p>Studies on scalable infrastructure solutions and best practices.</p>
+                </div>
             </div>
         </section>
 
         <section id="projects">
-            <h2>Projects</h2>
-            <div class="content-grid">
-                <article>
-                    <h3>Open Source</h3>
-                    <ul>
-                        <li><a href="projects/opensource.html">Open Source Contributions</a></li>
-                    </ul>
-                </article>
+            <h2>Open Source Projects</h2>
+            <div class="project-grid" id="github-projects">
+                <div class="loading">Loading GitHub projects...</div>
             </div>
         </section>
 
         <section id="media">
             <h2>Media</h2>
-            <div class="content-grid">
-                <article>
+            <div class="media-grid">
+                <div class="media-card">
                     <h3>YouTube Channel</h3>
-                    <p>Check out my latest videos on AI, technology, and entrepreneurship.</p>
-                    <a href="https://www.youtube.com/@mikexiaoxushen" target="_blank" class="button">Watch Videos</a>
-                </article>
+                    <p>Technical tutorials and insights on AI and infrastructure.</p>
+                    <a href="https://www.youtube.com/@XiaoxuShenxshen48" target="_blank" class="media-link">Watch Videos</a>
+                </div>
+                <div class="media-card">
+                    <h3>Substack Newsletter</h3>
+                    <p>Weekly insights on AI, infrastructure, and startup ecosystem.</p>
+                    <a href="https://substack.com/@mikeshen/posts" target="_blank" class="media-link">Subscribe</a>
+                </div>
             </div>
         </section>
 
         <section id="contact">
             <h2>Contact</h2>
-            <div class="contact-info">
-                <p>Email: <a href="mailto:contact@mikexiaoxushen.com">contact@mikexiaoxushen.com</a></p>
-                <div class="social-links">
-                    <a href="https://github.com/mikexiaoxushen" target="_blank">GitHub</a> |
-                    <a href="https://linkedin.com/in/mikexiaoxushen" target="_blank">LinkedIn</a> |
-                    <a href="https://twitter.com/mikexiaoxushen" target="_blank">Twitter</a>
-                </div>
+            <p>Get in touch with me through any of these channels:</p>
+            <div class="contact-links">
+                <a href="https://www.linkedin.com/in/mike-shen-8a518840/" target="_blank">LinkedIn</a>
+                <a href="https://x.com/MikeXShenAWS" target="_blank">X (Twitter)</a>
+                <a href="https://substack.com/@mikeshen/posts" target="_blank">Substack</a>
+                <a href="https://github.com/shenxiaoxu" target="_blank">GitHub</a>
+                <a href="chat.html">Chat with AI</a>
             </div>
         </section>
     </main>
@@ -104,5 +102,104 @@
     <footer>
         <p>&copy; 2024 Mike Xiaoxu Shen. All rights reserved.</p>
     </footer>
+
+    <script>
+        // Function to fetch and display latest posts
+        async function loadLatestPosts() {
+            try {
+                const substackFeed = document.getElementById('substack-feed');
+                const mediumFeed = document.getElementById('medium-feed');
+
+                // Substack updates
+                substackFeed.innerHTML = `
+                    <h3>Latest from Substack</h3>
+                    <div class="post-item">
+                        <h4>Weekly AI & Infrastructure Insights</h4>
+                        <p class="post-date">Updated weekly</p>
+                        <p>Subscribe to get the latest insights on AI, infrastructure, and startup ecosystem delivered to your inbox.</p>
+                        <a href="https://substack.com/@mikeshen/posts" target="_blank" class="read-more">Read Latest Posts →</a>
+                    </div>
+                `;
+
+                // Medium updates
+                mediumFeed.innerHTML = `
+                    <h3>Latest from Medium</h3>
+                    <div class="post-item">
+                        <h4>Technical Articles & Tutorials</h4>
+                        <p class="post-date">Updated periodically</p>
+                        <p>In-depth technical articles about AI, infrastructure, and development.</p>
+                        <a href="https://medium.com/@mikeshine" target="_blank" class="read-more">Read Latest Posts →</a>
+                    </div>
+                `;
+
+            } catch (error) {
+                console.error('Error loading posts:', error);
+            }
+        }
+
+        // Function to fetch GitHub repositories
+        async function loadGitHubProjects() {
+            try {
+                const projectsContainer = document.getElementById('github-projects');
+                
+                // Fetch repositories from GitHub API
+                const response = await fetch('https://api.github.com/users/shenxiaoxu/repos?sort=updated&per_page=6');
+                const repos = await response.json();
+
+                if (repos.length > 0) {
+                    projectsContainer.innerHTML = '';
+                    
+                    repos.forEach(repo => {
+                        const projectCard = document.createElement('div');
+                        projectCard.className = 'project-card';
+                        
+                        const language = repo.language || 'Various';
+                        const description = repo.description || 'Open source project';
+                        
+                        projectCard.innerHTML = `
+                            <h3><a href="${repo.html_url}" target="_blank">${repo.name}</a></h3>
+                            <p class="project-description">${description}</p>
+                            <div class="project-meta">
+                                <span class="language">${language}</span>
+                                <span class="stars">⭐ ${repo.stargazers_count}</span>
+                                <span class="forks"> ${repo.forks_count}</span>
+                            </div>
+                            <div class="project-links">
+                                <a href="${repo.html_url}" target="_blank" class="project-link">View Repository</a>
+                                ${repo.homepage ? `<a href="${repo.homepage}" target="_blank" class="project-link">Live Demo</a>` : ''}
+                            </div>
+                        `;
+                        
+                        projectsContainer.appendChild(projectCard);
+                    });
+                } else {
+                    projectsContainer.innerHTML = `
+                        <div class="project-card">
+                            <h3><a href="https://github.com/shenxiaoxu" target="_blank">GitHub Profile</a></h3>
+                            <p>Check out my GitHub profile for all my open source contributions and projects.</p>
+                            <a href="https://github.com/shenxiaoxu" target="_blank" class="project-link">View Profile</a>
+                        </div>
+                    `;
+                }
+
+            } catch (error) {
+                console.error('Error loading GitHub projects:', error);
+                const projectsContainer = document.getElementById('github-projects');
+                projectsContainer.innerHTML = `
+                    <div class="project-card">
+                        <h3><a href="https://github.com/shenxiaoxu" target="_blank">GitHub Profile</a></h3>
+                        <p>Check out my GitHub profile for all my open source contributions and projects.</p>
+                        <a href="https://github.com/shenxiaoxu" target="_blank" class="project-link">View Profile</a>
+                    </div>
+                `;
+            }
+        }
+
+        // Load content when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadLatestPosts();
+            loadGitHubProjects();
+        });
+    </script>
 </body>
 </html>

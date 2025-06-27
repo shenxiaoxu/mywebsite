@@ -10,7 +10,8 @@
   "dependencies": {
     "express": "^4.18.2",
     "node-fetch": "^2.6.7",
-    "dotenv": "^16.0.3"
+    "dotenv": "^16.0.3",
+    "@supabase/supabase-js": "^2.38.0"
   },
   "devDependencies": {
     "nodemon": "^2.0.22"
@@ -18,8 +19,9 @@
   "keywords": [
     "personal-website",
     "chatgpt",
-    "ai-chat"
+    "ai-chat",
+    "supabase"
   ],
   "author": "Mike Xiaoxu Shen",
   "license": "MIT"
-} 
+}
