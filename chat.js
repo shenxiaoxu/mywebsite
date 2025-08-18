@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             body: JSON.stringify({
                 messages: [{ role: 'user', content: message }],
-                model: 'gpt-3.5-turbo',
+                model: 'gpt-4o',
                 max_tokens: 1000,
                 temperature: 0.7
             })

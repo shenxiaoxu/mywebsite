@@ -4,13 +4,26 @@ const fetch = require('node-fetch');
 const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
 
+// Import new modules
+const { extractGoogleDocContent, extractGoogleSheetContent, saveContentToDatabase, detectContentType, extractId } = require('./api/content-extractor');
+const { startFineTuning, getFineTuneStatus } = require('./api/fine-tuner');
+const { getDeployedModels, deployFineTunedModel, callFineTunedModel, switchActiveModel, getActiveModel } = require('./api/model-deployer');
+const { evaluateModel, compareModels, runAutomatedEvaluation, getEvaluationHistory } = require('./api/model-evaluator');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Initialize Supabase
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
+
+let supabase;
+if (supabaseUrl && supabaseKey && !supabaseUrl.includes('placeholder')) {
+    supabase = createClient(supabaseUrl, supabaseKey);
+} else {
+    console.log('⚠️  Supabase not configured - some features will be limited');
+    supabase = null;
+}
 
 // Middleware
 app.use(express.json());
@@ -39,7 +52,7 @@ app.use((req, res, next) => {
 // Real ChatGPT API endpoint with Supabase storage
 app.post('/api/chat', async (req, res) => {
     try {
-        const { messages, model = 'gpt-3.5-turbo', max_tokens = 1000, temperature = 0.7 } = req.body;
+        const { messages, model = 'gpt-4o', max_tokens = 1000, temperature = 0.7 } = req.body;
         const sessionId = req.sessionId;
         const userIp = req.ip || req.connection.remoteAddress;
 
@@ -161,6 +174,286 @@ app.get('/api/chat/history/:sessionId', async (req, res) => {
     }
 });
 
+// ===== CONTENT EXTRACTION ENDPOINTS =====
+
+// Extract content from Google Doc or Sheet
+app.post('/api/extract/google-content', async (req, res) => {
+    try {
+        const { urlOrId } = req.body;
+        
+        if (!urlOrId) {
+            return res.status(400).json({ error: 'URL or ID is required' });
+        }
+
+        const contentType = detectContentType(urlOrId);
+        const id = extractId(urlOrId);
+        
+        console.log(`Extracting content from Google ${contentType === 'google_sheet' ? 'Sheet' : 'Doc'}:`, id);
+        
+        let contentData;
+        if (contentType === 'google_sheet') {
+            contentData = await extractGoogleSheetContent(id);
+        } else {
+            contentData = await extractGoogleDocContent(id);
+        }
+        
+        await saveContentToDatabase(contentData, contentType);
+        
+        res.json({
+            success: true,
+            message: `Content extracted and saved successfully from ${contentType === 'google_sheet' ? 'Google Sheet' : 'Google Doc'}`,
+            data: contentData
+        });
+    } catch (error) {
+        console.error('Error extracting Google content:', error);
+        res.status(500).json({ error: 'Failed to extract content', details: error.message });
+    }
+});
+
+// Extract content from Google Doc (legacy endpoint)
+app.post('/api/extract/google-doc', async (req, res) => {
+    try {
+        const { docId } = req.body;
+        
+        if (!docId) {
+            return res.status(400).json({ error: 'Document ID is required' });
+        }
+
+        console.log('Extracting content from Google Doc:', docId);
+        
+        const contentData = await extractGoogleDocContent(docId);
+        await saveContentToDatabase(contentData, 'google_doc');
+        
+        res.json({
+            success: true,
+            message: 'Content extracted and saved successfully',
+            data: contentData
+        });
+    } catch (error) {
+        console.error('Error extracting Google Doc content:', error);
+        res.status(500).json({ error: 'Failed to extract content', details: error.message });
+    }
+});
+
+// Extract content from Google Sheet
+app.post('/api/extract/google-sheet', async (req, res) => {
+    try {
+        const { sheetId } = req.body;
+        
+        if (!sheetId) {
+            return res.status(400).json({ error: 'Sheet ID is required' });
+        }
+
+        console.log('Extracting content from Google Sheet:', sheetId);
+        
+        const contentData = await extractGoogleSheetContent(sheetId);
+        await saveContentToDatabase(contentData, 'google_sheet');
+        
+        res.json({
+            success: true,
+            message: 'Content extracted and saved successfully',
+            data: contentData
+        });
+    } catch (error) {
+        console.error('Error extracting Google Sheet content:', error);
+        res.status(500).json({ error: 'Failed to extract content', details: error.message });
+    }
+});
+
+// Get all extracted content
+app.get('/api/content', async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('content_sources')
+            .select('*')
+            .order('extracted_at', { ascending: false });
+
+        if (error) throw error;
+        
+        res.json({ content: data || [] });
+    } catch (error) {
+        console.error('Error fetching content:', error);
+        res.status(500).json({ error: 'Failed to fetch content' });
+    }
+});
+
+// ===== FINE-TUNING ENDPOINTS =====
+
+// Start fine-tuning process
+app.post('/api/fine-tune/start', async (req, res) => {
+    try {
+        console.log('Starting fine-tuning process...');
+        
+        const result = await startFineTuning();
+        
+        res.json({
+            success: true,
+            message: 'Fine-tuning started successfully',
+            data: result
+        });
+    } catch (error) {
+        console.error('Error starting fine-tuning:', error);
+        res.status(500).json({ error: 'Failed to start fine-tuning', details: error.message });
+    }
+});
+
+// Get fine-tuning status
+app.get('/api/fine-tune/status/:jobId', async (req, res) => {
+    try {
+        const { jobId } = req.params;
+        
+        const status = await getFineTuneStatus(jobId);
+        
+        res.json({
+            success: true,
+            data: status
+        });
+    } catch (error) {
+        console.error('Error getting fine-tuning status:', error);
+        res.status(500).json({ error: 'Failed to get fine-tuning status', details: error.message });
+    }
+});
+
+// ===== MODEL DEPLOYMENT ENDPOINTS =====
+
+// Deploy fine-tuned model
+app.post('/api/deploy/model', async (req, res) => {
+    try {
+        const { jobId } = req.body;
+        
+        if (!jobId) {
+            return res.status(400).json({ error: 'Job ID is required' });
+        }
+
+        console.log('Deploying fine-tuned model for job:', jobId);
+        
+        const result = await deployFineTunedModel(jobId);
+        
+        res.json({
+            success: true,
+            message: 'Model deployed successfully',
+            data: result
+        });
+    } catch (error) {
+        console.error('Error deploying model:', error);
+        res.status(500).json({ error: 'Failed to deploy model', details: error.message });
+    }
+});
+
+// Get deployed models
+app.get('/api/models', async (req, res) => {
+    try {
+        const models = await getDeployedModels();
+        
+        res.json({
+            success: true,
+            data: models
+        });
+    } catch (error) {
+        console.error('Error fetching deployed models:', error);
+        res.status(500).json({ error: 'Failed to fetch models', details: error.message });
+    }
+});
+
+// Switch active model
+app.post('/api/models/switch', async (req, res) => {
+    try {
+        const { modelId } = req.body;
+        
+        if (!modelId) {
+            return res.status(400).json({ error: 'Model ID is required' });
+        }
+
+        const result = await switchActiveModel(modelId);
+        
+        res.json({
+            success: true,
+            message: 'Active model switched successfully',
+            data: result
+        });
+    } catch (error) {
+        console.error('Error switching model:', error);
+        res.status(500).json({ error: 'Failed to switch model', details: error.message });
+    }
+});
+
+// Chat with fine-tuned model
+app.post('/api/chat/fine-tuned', async (req, res) => {
+    try {
+        const { messages, modelName, maxTokens = 1000, temperature = 0.7 } = req.body;
+        
+        if (!messages || !modelName) {
+            return res.status(400).json({ error: 'Messages and model name are required' });
+        }
+
+        const response = await callFineTunedModel(modelName, messages, maxTokens, temperature);
+        
+        res.json({
+            success: true,
+            data: response
+        });
+    } catch (error) {
+        console.error('Error calling fine-tuned model:', error);
+        res.status(500).json({ error: 'Failed to call fine-tuned model', details: error.message });
+    }
+});
+
+// ===== MODEL EVALUATION ENDPOINTS =====
+
+// Run automated evaluation
+app.post('/api/evaluate/automated', async (req, res) => {
+    try {
+        console.log('Running automated evaluation...');
+        
+        const result = await runAutomatedEvaluation();
+        
+        res.json({
+            success: true,
+            message: 'Automated evaluation completed',
+            data: result
+        });
+    } catch (error) {
+        console.error('Error running automated evaluation:', error);
+        res.status(500).json({ error: 'Failed to run evaluation', details: error.message });
+    }
+});
+
+// Compare specific models
+app.post('/api/evaluate/compare', async (req, res) => {
+    try {
+        const { modelNames } = req.body;
+        
+        if (!modelNames || !Array.isArray(modelNames)) {
+            return res.status(400).json({ error: 'Model names array is required' });
+        }
+
+        const result = await compareModels(modelNames);
+        
+        res.json({
+            success: true,
+            data: result
+        });
+    } catch (error) {
+        console.error('Error comparing models:', error);
+        res.status(500).json({ error: 'Failed to compare models', details: error.message });
+    }
+});
+
+// Get evaluation history
+app.get('/api/evaluate/history', async (req, res) => {
+    try {
+        const history = await getEvaluationHistory();
+        
+        res.json({
+            success: true,
+            data: history
+        });
+    } catch (error) {
+        console.error('Error fetching evaluation history:', error);
+        res.status(500).json({ error: 'Failed to fetch evaluation history', details: error.message });
+    }
+});
+
 // Serve static files explicitly with correct MIME types
 app.get('/style.css', (req, res) => {
     res.setHeader('Content-Type', 'text/css');
@@ -184,6 +477,10 @@ app.get('/', (req, res) => {
 
 app.get('/chat', (req, res) => {
     res.sendFile(path.join(__dirname, 'chat.html'));
+});
+
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'admin.html'));
 });
 
 // For local development

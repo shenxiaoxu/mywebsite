@@ -111,3 +111,104 @@ Desktop.ini
 # Local configuration
 config.local.js
 settings.local.json
+
+# ===== PERSONAL & SENSITIVE DATA =====
+
+# Google Cloud credentials
+google-credentials.json
+google-service-account.json
+*.json.key
+service-account-*.json
+
+# OpenAI API keys and credentials
+openai-*.json
+api-keys.json
+credentials.json
+
+# Personal financial data
+personal-data/
+financial-data/
+*.csv
+*.xlsx
+*.xls
+financial-*.json
+assets-*.json
+
+# ===== TEMPORARY FILES =====
+
+# Training data files
+temp/
+training_data_*.jsonl
+*.jsonl
+fine-tune-*.json
+
+# Fine-tuning artifacts
+fine-tune-results/
+model-checkpoints/
+*.ckpt
+*.safetensors
+
+# ===== DATABASE & STORAGE =====
+
+# Supabase local files
+.supabase/
+supabase-local/
+
+# Chat history and sessions
+chat-sessions/
+session-*.json
+chat-history-*.json
+
+# ===== LOGS & DEBUG =====
+
+# Application logs
+app.log
+error.log
+debug.log
+*.log.*
+
+# Debug files
+debug/
+*.debug
+
+# ===== BACKUP & ARCHIVE =====
+
+# Backup files
+backup/
+*.backup
+*.bak
+
+# Archive files
+archive/
+*.archive
+
+# ===== DEVELOPMENT =====
+
+# Test files
+test-results/
+coverage/
+.nyc_output/
+
+# Development tools
+.eslintcache
+.parcel-cache/
+
+# ===== SECURITY =====
+
+# Private keys
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Certificates
+*.crt
+*.cer
+*.der
+
+# ===== CUSTOM =====
+
+# Add any other personal or sensitive files here
+personal/
+private/
+sensitive/
