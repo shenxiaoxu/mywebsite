@@ -8,6 +8,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const sendButton = document.getElementById('sendButton');
     const chatForm = document.getElementById('chatForm');
     const chatMessages = document.getElementById('chatMessages');
+    const modelRadios = document.querySelectorAll('input[name="model"]');
+    const enhancedToggle = document.getElementById('enhancedMode');
+    const modelInfo = document.getElementById('currentModelInfo');
+    const sampleQuestions = document.getElementById('sampleQuestions');
+    const questionChips = document.querySelectorAll('.question-chip');
     
     console.log('Message input:', messageInput);
     console.log('Send button:', sendButton);
@@ -16,6 +21,44 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error('Could not find input or button elements');
         return;
     }
+    
+    // Function to update model info display
+    function updateModelInfo() {
+        const selectedModel = document.querySelector('input[name="model"]:checked').value;
+        const isEnhanced = enhancedToggle.checked;
+        
+        let modelName = selectedModel === 'ft:gpt-3.5-turbo-0125:mikeempire::C5w66Ksb' ? 'Fine-Tuned Financial Expert' : 'GPT-4o';
+        let enhancedText = isEnhanced ? 'with Enhanced Mode' : '';
+        
+        modelInfo.textContent = `Using: ${modelName} ${enhancedText}`;
+        
+        // Show/hide sample questions based on model selection
+        if (selectedModel === 'ft:gpt-3.5-turbo-0125:mikeempire::C5w66Ksb') {
+            sampleQuestions.style.display = 'block';
+        } else {
+            sampleQuestions.style.display = 'none';
+        }
+    }
+    
+    // Add event listeners for model selection
+    modelRadios.forEach(radio => {
+        radio.addEventListener('change', updateModelInfo);
+    });
+    
+    enhancedToggle.addEventListener('change', updateModelInfo);
+    
+    // Add event listeners for sample question chips
+    questionChips.forEach(chip => {
+        chip.addEventListener('click', function() {
+            const question = this.getAttribute('data-question');
+            messageInput.value = question;
+            messageInput.focus();
+            sendButton.disabled = false;
+        });
+    });
+    
+    // Initialize model info
+    updateModelInfo();
     
     // Enable/disable send button based on input
     messageInput.addEventListener('input', function() {
@@ -33,6 +76,22 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!message) return;
         
         console.log('Sending message:', message);
+        
+        // Get selected model and enhanced mode
+        const selectedModel = document.querySelector('input[name="model"]:checked').value;
+        const isEnhanced = enhancedToggle.checked;
+        
+        // Determine API endpoint
+        let apiEndpoint = '/api/chat'; // Default
+        if (selectedModel === 'ft:gpt-3.5-turbo-0125:mikeempire::C5w66Ksb' && isEnhanced) {
+            apiEndpoint = '/api/chat/enhanced';
+        } else if (selectedModel === 'ft:gpt-3.5-turbo-0125:mikeempire::C5w66Ksb' && !isEnhanced) {
+            apiEndpoint = '/api/chat/fine-tuned';
+        }
+        
+        console.log('Using API endpoint:', apiEndpoint);
+        console.log('Selected model:', selectedModel);
+        console.log('Enhanced mode:', isEnhanced);
         
         // Add user message to chat
         const messageDiv = document.createElement('div');
@@ -61,19 +120,27 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
         chatMessages.appendChild(typingDiv);
         
+        // Prepare request body based on endpoint
+        let requestBody = {
+            messages: [{ role: 'user', content: message }],
+            max_tokens: 1000,
+            temperature: 0.7
+        };
+        
+        if (apiEndpoint === '/api/chat') {
+            requestBody.model = selectedModel;
+        } else {
+            requestBody.modelName = selectedModel;
+        }
+        
         // Call API
-        fetch('/api/chat', {
+        fetch(apiEndpoint, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-Session-ID': 'session-' + Date.now()
             },
-            body: JSON.stringify({
-                messages: [{ role: 'user', content: message }],
-                model: 'gpt-4o',
-                max_tokens: 1000,
-                temperature: 0.7
-            })
+            body: JSON.stringify(requestBody)
         })
         .then(response => response.json())
         .then(data => {
@@ -84,15 +151,30 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             // Add AI response
-            const aiResponse = data.choices[0].message.content;
+            let aiResponse;
+            if (data.choices && data.choices[0]) {
+                aiResponse = data.choices[0].message.content;
+            } else if (data.data && data.data.choices && data.data.choices[0]) {
+                aiResponse = data.data.choices[0].message.content;
+            } else {
+                aiResponse = 'Sorry, I received an unexpected response format.';
+            }
+            
             const aiDiv = document.createElement('div');
             aiDiv.className = 'message ai-message';
             aiDiv.innerHTML = `
                 <div class="message-content">
                     <p>${aiResponse}</p>
+                    ${data.context ? `<small style="opacity: 0.7; font-style: italic;">${data.context}</small>` : ''}
+                    <small style="opacity: 0.6; display: block; margin-top: 8px; font-size: 11px;">
+                        🤖 ${selectedModel === 'ft:gpt-3.5-turbo-0125:mikeempire::C5w66Ksb' ? 'Fine-Tuned Financial Expert' : 'GPT-4o'}${isEnhanced ? ' (Enhanced)' : ''}
+                    </small>
                 </div>
             `;
             chatMessages.appendChild(aiDiv);
+            
+            // Scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
         })
         .catch(error => {
             console.error('API Error:', error);
@@ -109,9 +191,13 @@ document.addEventListener('DOMContentLoaded', function() {
             errorDiv.innerHTML = `
                 <div class="message-content error-message">
                     <p>Sorry, I encountered an error. Please try again.</p>
+                    <small style="opacity: 0.7;">Error: ${error.message}</small>
                 </div>
             `;
             chatMessages.appendChild(errorDiv);
+            
+            // Scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
         });
     });
     

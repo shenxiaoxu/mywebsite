@@ -398,6 +398,55 @@ app.post('/api/chat/fine-tuned', async (req, res) => {
     }
 });
 
+// Enhanced chat with financial data context
+app.post('/api/chat/enhanced', async (req, res) => {
+    try {
+        const { messages, modelName, maxTokens = 1000, temperature = 0.7 } = req.body;
+        
+        if (!messages || !modelName) {
+            return res.status(400).json({ error: 'Messages and model name are required' });
+        }
+
+        // Get the latest financial data from the database
+        const { data: financialData, error } = await supabase
+            .from('content_sources')
+            .select('*')
+            .eq('source_type', 'google_sheet')
+            .order('extracted_at', { ascending: false })
+            .limit(1);
+
+        if (error) {
+            console.error('Error fetching financial data:', error);
+            // Continue without financial data
+        }
+
+        // Create enhanced context with financial data
+        let enhancedMessages = [...messages];
+        
+        if (financialData && financialData.length > 0) {
+            const latestData = financialData[0];
+            const contextMessage = {
+                role: "system",
+                content: `You have access to the user's financial data. Here is the latest information: ${latestData.title}\n\nKey financial summary:\n- Total assets: ${latestData.metadata?.total || 'Available in data'}\n- Cash: ${latestData.metadata?.cash || 'Available in data'}\n- Stocks: ${latestData.metadata?.stock || 'Available in data'}\n- Real estate: ${latestData.metadata?.house || 'Available in data'}\n- 401K: ${latestData.metadata?.['401K'] || 'Available in data'}\n\nUse this information to provide personalized financial insights and advice.`
+            };
+            
+            enhancedMessages.unshift(contextMessage);
+        }
+
+        // Call the fine-tuned model with enhanced context
+        const response = await callFineTunedModel(modelName, enhancedMessages, maxTokens, temperature);
+        
+        res.json({
+            success: true,
+            data: response,
+            context: financialData ? 'Financial data included' : 'No financial data available'
+        });
+    } catch (error) {
+        console.error('Error calling enhanced chat:', error);
+        res.status(500).json({ error: 'Failed to call enhanced chat', details: error.message });
+    }
+});
+
 // ===== MODEL EVALUATION ENDPOINTS =====
 
 // Run automated evaluation

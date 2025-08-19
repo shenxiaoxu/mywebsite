@@ -24,10 +24,42 @@
     </header>
 
     <main class="chat-container">
+        <!-- Model Selection Interface -->
+        <div class="model-selection">
+            <div class="model-controls">
+                <div class="model-option">
+                    <input type="radio" id="gpt4" name="model" value="gpt-4o" checked>
+                    <label for="gpt4">GPT-4o (General)</label>
+                </div>
+                <div class="model-option">
+                    <input type="radio" id="fineTuned" name="model" value="ft:gpt-3.5-turbo-0125:mikeempire::C5w66Ksb">
+                    <label for="fineTuned">Fine-Tuned (Financial Expert)</label>
+                </div>
+            </div>
+            <div class="enhanced-toggle">
+                <input type="checkbox" id="enhancedMode" checked>
+                <label for="enhancedMode">Enhanced Mode (Access to your financial data)</label>
+            </div>
+            <div class="model-info">
+                <span id="currentModelInfo">Using: GPT-4o with Enhanced Mode</span>
+            </div>
+            
+            <!-- Sample Questions for Fine-Tuned Model -->
+            <div class="sample-questions" id="sampleQuestions" style="display: none;">
+                <h4>💡 Try asking about your finances:</h4>
+                <div class="question-chips">
+                    <button class="question-chip" data-question="What are my total assets and how are they distributed?">Total assets breakdown</button>
+                    <button class="question-chip" data-question="How has my portfolio performed over time?">Portfolio performance</button>
+                    <button class="question-chip" data-question="What are my key financial insights?">Financial insights</button>
+                    <button class="question-chip" data-question="How much do I have in stocks vs cash?">Stocks vs cash</button>
+                </div>
+            </div>
+        </div>
+
         <div class="chat-messages" id="chatMessages">
             <div class="message ai-message">
                 <div class="message-content">
-                    <p>Hello! I'm an AI assistant. How can I help you today?</p>
+                    <p>Hello! I'm an AI assistant. I can help you with general questions or provide personalized financial insights using your fine-tuned model. Choose your preferred model above!</p>
                 </div>
             </div>
         </div>
